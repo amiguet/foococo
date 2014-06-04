@@ -416,7 +416,7 @@ def init():
 
     global pyo_server
     
-    pyo_server = pyo.Server()
+    pyo_server = pyo.Server(nchnls=0)
     pyo_server.setMidiInputDevice(_find_device())
     pyo_server.boot()
     pyo_server.start()
