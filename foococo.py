@@ -410,7 +410,7 @@ def midi_CC(num, output, value=None):
 # =====================================================
 
 
-def init(server=None):
+def init(server=None, text='Helo'):
 
     ''' Initialization. Must be called before creating the "patch". '''
 
@@ -428,7 +428,7 @@ def init(server=None):
         
         server.setMidiInputDevice(_find_device())
 
-    hardware.init()
+    hardware.init(text)
 
         
 def main_loop():

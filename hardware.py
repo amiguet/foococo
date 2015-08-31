@@ -68,7 +68,7 @@ def _standalone(b):
 
 # Public API
 
-def init():
+def init(text='HELO'):
     '''Finds and initializes the device'''
     
     global softstep
@@ -77,7 +77,7 @@ def init():
     softstep = _open_device('SSCOM MIDI 1')
     _standalone(False)
     
-    display('HELO')
+    display(text)
     reset_leds()
 
 
