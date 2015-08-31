@@ -147,12 +147,15 @@ if __name__ == '__main__':
     import time
     time.sleep(2)
     
+    backlight(True)
     display('Cool')
     led(6,GREEN,BLINK)
     led(7,RED,FAST_BLINK)
     led(8,YELLOW,FLASH)
     
     time.sleep(2)
+    
+    backlight(False)
     
     close()
     
