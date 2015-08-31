@@ -410,17 +410,24 @@ def midi_CC(num, output, value=None):
 # =====================================================
 
 
-def init():
+def init(server=None):
 
     ''' Initialization. Must be called before creating the "patch". '''
 
-    global pyo_server
+    if server is None:
+
+        # make it global so that the object doesn't get garbage-collected
+        global pyo_server
+        
+        pyo_server = pyo.Server(nchnls=0)
+        pyo_server.setMidiInputDevice(_find_device())
+        pyo_server.boot()
+        pyo_server.start()
     
-    pyo_server = pyo.Server(nchnls=0)
-    pyo_server.setMidiInputDevice(_find_device())
-    pyo_server.boot()
-    pyo_server.start()
-    
+    else:
+        
+        server.setMidiInputDevice(_find_device())
+
     hardware.init()
 
         
