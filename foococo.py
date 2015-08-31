@@ -398,11 +398,11 @@ def midi_PC(num, output, channel=0):
     return lambda: output.set_instrument(num, channel)
 
 
-def midi_CC(num, output):
+def midi_CC(num, output, value=None):
     
     ''' Callback to send a midi control change message '''
     
-    return lambda x: output.write_short(0xb0, num, x)
+    return lambda x=value: output.write_short(0xb0, num, x)
 
 
 # =====================================================
