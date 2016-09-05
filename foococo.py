@@ -184,7 +184,7 @@ class Press:
         'both': 2,
     }
     
-    def __init__(self, source, callback, threshold=40, dir='down'):
+    def __init__(self, source, callback=None, threshold=40, dir='down'):
         
         ''' Create a new Press-event manager.
         
@@ -197,15 +197,16 @@ class Press:
         and up to releases (but for code clarity use the Release fonction)
         
         '''
-        
-        inner = _single_callback_or_list(callback)
-        
+                
         dir = Press.dir2num[dir]
         
         self.trig = pyo.Thresh(input=source.stream, threshold=threshold, dir=dir)
-        self.trig_f = pyo.TrigFunc(input=self.trig, function=inner)
+        
+        if callback:
+            inner = _single_callback_or_list(callback)
+            self.trig_f = pyo.TrigFunc(input=self.trig, function=inner)
 
-def Release(source, callback, threshold=40):
+def Release(source, callback=None, threshold=40):
     
     ''' Like Press, but for release events. '''
     
