@@ -63,13 +63,19 @@ _button2CC = {
 }
 
 
-_corner2offset = {
+_corner2offset = { #SoftStep 1
     'tl' : 0,
     'tr' : 1,
     'bl' : 2,
     'br' : 3,
 }
 
+_corner2offset_SS2 = { # SoftStep 2
+    't' : 0,
+    'r' : 1,
+    'l' : 2,
+    'b' : 3,
+}
 
 # pyo midi streams are made singletons for efficiency
 _midi_streams = {}
@@ -424,10 +430,14 @@ def midi_CC(num, output, value=None):
 # =====================================================
 
 
-def init(server=None, text='Helo'):
+def init(server=None, text='Helo', model=1):
 
     ''' Initialization. Must be called before creating the "patch". '''
 
+    if model == 2:
+        global _corner2offset
+        _corner2offset = _corner2offset_SS2
+    
     if server is None:
 
         # make it global so that the object doesn't get garbage-collected
@@ -464,7 +474,7 @@ if __name__ == '__main__':
 
 
     # Initializes foococo
-    init()
+    init(model=1) # Use model=2 for a SoftStep 2
     
     
     # The main patch
