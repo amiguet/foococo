@@ -118,26 +118,39 @@ class Button():
         # The button with number 1 (sum of 4 sensors, clipped to 0-127)
         Button(1)
         
-        # Top-left corner of button 1
-        Button(1,'tl')
-        
         # Top of button 1
-        Button(1,'tl') + Button(1, 'tr')
+        Button(1,'t')
+        
+        # Top-left corner of button 1 (SoftStep 1 only)
+        Button(1,'tl')
         
         '''
         
-        if isinstance(base, pyo.PyoObject):
+        if isinstance(base, pyo.PyoObject): # internal use: build button from other buttons
             self.stream = base
+            return
         
-        elif isinstance(base, str): # one of the nav_* buttons
+        if isinstance(base, str): # one of the nav_* buttons
             self.stream = _midi_stream(_button2CC[base])
+            return
     
-        elif corner is not None:
-            self.stream = _midi_stream(_button2CC[base] + _corner2offset[corner])
-
-        else: # sum-clip the four sensors under one numbered button
-            sum = reduce(operator.add, [_midi_stream(_button2CC[base]+offset) for offset in range(4)])
-            self.stream = pyo.Clip(sum, min=0, max=127)
+        if corner is not None:
+            try:
+                self.stream = _midi_stream(_button2CC[base] + _corner2offset[corner])
+                return
+            except KeyError: # t/l/b/r for SoftStep 1 is a combination of sensors
+                if corner in ['t', 'l', 'b', 'r']:
+                    offsets = [v for k, v in _corner2offset.iteritems() if corner in k]
+                    source = [_midi_stream(_button2CC[base]+offset) for offset in offsets]
+                else: # invalid corner specification
+                    raise
+                    
+        else: # combine the four sensors under one numbered button
+            source = [_midi_stream(_button2CC[base]+offset) for offset in range(4)]
+        
+        # If we got here, we've got a combination of sensors to sum-clip
+        sum = reduce(operator.add, source)
+        self.stream = pyo.Clip(sum, min=0, max=127)
             
             
     def __add__(self, other):
@@ -285,8 +298,8 @@ class Expression:
     
     # up-down motion on button 1
     Expression(
-        up = Button(1,'tl') + Button(1,'tr'),
-        down = Button(1,'bl') + Button(1, 'br'),
+        up = Button(1,'t'),
+        down = Button(1,'b'),
         callback= display('E')
     )
     
@@ -420,7 +433,7 @@ def init(server=None, text='Helo'):
         # make it global so that the object doesn't get garbage-collected
         global pyo_server
         
-        pyo_server = pyo.Server(nchnls=0)
+        pyo_server = pyo.Server()
         pyo_server.setMidiInputDevice(_find_device())
         pyo_server.boot()
         pyo_server.start()
@@ -495,15 +508,15 @@ if __name__ == '__main__':
         # You can also emulate expression pedals with
         # "normal" buttons, with vertical movements...
         Expression(
-            up = Button(3,'tl') + Button(3,'tr'),
-            down = Button(3,'bl') + Button(3, 'br'),
+            up = Button(3,'t'),
+            down = Button(3,'b'),
             callback= display('V')
         ),
         
         # Or horizontal
         Expression(
-            up = Button(8,'tr') + Button(8,'br'),
-            down = Button(8,'tl') + Button(8, 'bl'),
+            up = Button(8,'r'),
+            down = Button(8,'l'),
             callback= display('H')
         ),
         
