@@ -43,10 +43,14 @@ DEFAULT_CURVE_SS2 = 20
 # =====================================================
 
 
-def _find_device():
+def _find_device(device_index=1):
     for name, index in zip(*pyo.pm_get_input_devices()):
         if name == 'SSCOM MIDI 1':
-            return index
+            device_index -= 1
+            if device_index == 0:
+                return index
+    
+    raise RuntimeError("Could not find a SoftStep Controller")
 
 
 # Button names/number to midi CC values
@@ -501,9 +505,13 @@ def midi_CC(num, output, value=None):
 # =====================================================
 
 
-def init(server=None, text='Helo', model=1):
+def init(server=None, text='Helo', model=1, device_index=1):
 
-    ''' Initialization. Must be called before creating the "patch". '''
+    ''' Initialization. Must be called before creating the "patch".
+    
+        If several SoftStep's are connected to the computer,
+        you can select the one you want with device_index.
+    '''
 
     if model == 2:
         global _corner2offset
@@ -519,15 +527,15 @@ def init(server=None, text='Helo', model=1):
         global pyo_server
         
         pyo_server = pyo.Server()
-        pyo_server.setMidiInputDevice(_find_device())
+        pyo_server.setMidiInputDevice(_find_device(device_index))
         pyo_server.boot()
         pyo_server.start()
     
     else:
         
-        server.setMidiInputDevice(_find_device())
+        server.setMidiInputDevice(_find_device(device_index))
 
-    hardware.init(text)
+    hardware.init(text, device_index)
 
         
 def main_loop():

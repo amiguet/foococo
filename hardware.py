@@ -43,14 +43,16 @@ FLASH = 4
 
 # Private functions
 
-def _open_device(name='SSCOM MIDI 1'):
+def _open_device(name='SSCOM MIDI 1', device_index=1):
     '''Opens midi device with given name and port number'''
     # This code stinks. Is there any better way to find the device?
-
+    
     for dn in range(midi.get_count()):
         md = midi.get_device_info(dn)
         if (md[1] == name) and (md[3] == 1): # md[3] == 1 <=> output device
-            return midi.Output(dn)
+            device_index -= 1
+            if device_index == 0:
+                return midi.Output(dn)
         
     raise RuntimeError("Could not find a SoftStep Controller")
 
@@ -68,13 +70,13 @@ def _standalone(b):
 
 # Public API
 
-def init(text='HELO'):
+def init(text='HELO', device_index=1):
     '''Finds and initializes the device'''
     
     global softstep
     
     midi.init()
-    softstep = _open_device('SSCOM MIDI 1')
+    softstep = _open_device('SSCOM MIDI 1', device_index)
     _standalone(False)
     
     display(text)
