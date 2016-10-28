@@ -27,6 +27,17 @@ import pyo
 import hardware
 from pygame import midi
 
+# Adjust these values to determine which amount of pressure
+# is considered as "Pressed"
+# Note: SS2's sensors are much more sensitive than SS1's.
+DEFAULT_THRESHOLD = 5
+DEFAULT_THRESHOLD_SS2 = 40
+
+# Default curve for Expression object
+# higher values mean better control at slow speed
+DEFAULT_CURVE = 2
+DEFAULT_CURVE_SS2 = 20
+
 # =====================================================
 # Private stuff
 # =====================================================
@@ -203,7 +214,7 @@ class Press:
         'both': 2,
     }
     
-    def __init__(self, source, callback=None, threshold=40, dir='down'):
+    def __init__(self, source, callback=None, threshold=None, dir='down'):
         
         ''' Create a new Press-event manager.
         
@@ -216,7 +227,10 @@ class Press:
         and up to releases (but for code clarity use the Release fonction)
         
         '''
-                
+        
+        if threshold is None:
+            threshold = DEFAULT_THRESHOLD
+        
         dir = Press.dir2num[dir]
         
         self.trig = pyo.Thresh(input=source.stream, threshold=threshold, dir=dir)
@@ -225,7 +239,7 @@ class Press:
             inner = _single_callback_or_list(callback)
             self.trig_f = pyo.TrigFunc(input=self.trig, function=inner)
 
-def Release(source, callback=None, threshold=40):
+def Release(source, callback=None, threshold=None):
     
     ''' Like Press, but for release events. '''
     
@@ -236,7 +250,7 @@ class MultiState:
     
     ''' Rotate a list of states each time a button is pressed. '''
     
-    def __init__(self, next, states, prev=None, threshold=40):
+    def __init__(self, next, states, prev=None, threshold=None):
         
         ''' Creates a MultiState manager.
         
@@ -250,6 +264,9 @@ class MultiState:
         NB: the first state in states will be executed when the MultiState is created.
         
         '''
+        
+        if threshold is None:
+            threshold=DEFAULT_THRESHOLD
         
         self.states = [_single_callback_or_list(s) for s in states]
         self.length = len(states)
@@ -311,7 +328,10 @@ class Expression:
     
     '''
     
-    def __init__(self, up, down, callback, init=0):
+    def __init__(self, up, down, callback, init=0, curve=None):
+        
+        if curve is None:
+            curve = DEFAULT_CURVE*2+1
         
         self.value = init
         
@@ -328,7 +348,7 @@ class Expression:
             
             # Change the curve: fine control when diff is small
             # but still fast change when diff is big
-            diff = (diff/127.0)**5 
+            diff = (diff/127.0)**curve
             
             self.value += diff
             if self.value > 127:
@@ -436,7 +456,11 @@ def init(server=None, text='Helo', model=1):
 
     if model == 2:
         global _corner2offset
+        global DEFAULT_THRESHOLD
+        global DEFAULT_CURVE
         _corner2offset = _corner2offset_SS2
+        DEFAULT_THRESHOLD = DEFAULT_THRESHOLD_SS2
+        DEFAULT_CURVE = DEFAULT_CURVE_SS2
     
     if server is None:
 
