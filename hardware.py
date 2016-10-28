@@ -24,7 +24,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from pygame import midi
+import pyo
 import sysex
 
 # CONSTANTS
@@ -43,16 +43,12 @@ FLASH = 4
 
 # Private functions
 
-def _open_device(name='SSCOM MIDI 1', device_index=1):
-    '''Opens midi device with given name and port number'''
-    # This code stinks. Is there any better way to find the device?
-    
-    for dn in range(midi.get_count()):
-        md = midi.get_device_info(dn)
-        if (md[1] == name) and (md[3] == 1): # md[3] == 1 <=> output device
+def _find_device(devices, device_index=1):
+    for name, index in zip(*devices):
+        if name == 'SSCOM MIDI 1':
             device_index -= 1
             if device_index == 0:
-                return midi.Output(dn)
+                return index
         
     raise RuntimeError("Could not find a SoftStep Controller")
 
@@ -64,19 +60,34 @@ def _standalone(b):
     
     standalone = 0 if b else 1
     
-    softstep.write_sys_ex(0, sysex.messages['standalone'][standalone])
-    softstep.write_sys_ex(0, sysex.messages['tether'][1-standalone])
+    _sys_ex(0, sysex.messages['standalone'][standalone])
+    _sys_ex(0, sysex.messages['tether'][1-standalone])
+
+def _sys_ex(_, message):
+    msg = ''.join([chr(n) for n in message])
+    pyo_server.sysexout(msg)
 
 
 # Public API
 
-def init(text='HELO', device_index=1):
-    '''Finds and initializes the device'''
+def init(server, text='', device_index=1):
+    '''Finds and initializes the device
     
-    global softstep
+    server is an unbooted pyo Server object.
+    This method will boot and start the server.
+    '''
     
-    midi.init()
-    softstep = _open_device('SSCOM MIDI 1', device_index)
+    global pyo_server
+    
+    server.setMidiInputDevice(
+        _find_device(pyo.pm_get_input_devices(), device_index),
+    )
+    server.setMidiOutputDevice(
+        _find_device(pyo.pm_get_output_devices(), device_index),
+    )
+    pyo_server = server
+    server.boot().start()
+    
     _standalone(False)
     
     display(text)
@@ -91,9 +102,6 @@ def close(back_to_standalone_mode=True):
     
     if back_to_standalone_mode:
         _standalone(True)
-
-    # TODO: fix the 'PortMidi: Bad Pointer' error that occurs when closing the midi device        
-    softstep.close()
     
 
 def backlight(b):
@@ -101,18 +109,18 @@ def backlight(b):
     
     val = 1 if b else 0
     
-    softstep.write_sys_ex(0, sysex.messages['backlight'][val])
+    _sys_ex(0, sysex.messages['backlight'][val])
 
 
 def led(number, color, mode):
     '''Sets led number <led> (numbered from 1 to 10) to given color and mode'''
     
-    softstep.write_short(0xB0,40,number-1) # select led, numbered from 0
-    softstep.write_short(0xB0,41,color) # green = 0, red = 1, yellow = 2
-    softstep.write_short(0xB0,42,mode) # range(x) = (off, on, blink, fast, flash)
-    softstep.write_short(0xB0,0,0)
-    softstep.write_short(0xB0,0,0)
-    softstep.write_short(0xB0,0,0)
+    pyo_server.ctlout(40,number-1) # select led, numbered from 0
+    pyo_server.ctlout(41,color) # green = 0, red = 1, yellow = 2
+    pyo_server.ctlout(42,mode) # range(x) = (off, on, blink, fast, flash)
+    pyo_server.ctlout(0,0)
+    pyo_server.ctlout(0,0)
+    pyo_server.ctlout(0,0)
 
 
 def reset_leds():
@@ -132,7 +140,7 @@ def display(text):
     
     # Now send to the device
     for n, c in enumerate(text):
-        softstep.write_short(176,50+n,ord(c))
+        pyo_server.ctlout(50+n,ord(c))
 
 
 
@@ -140,7 +148,9 @@ if __name__ == '__main__':
 
     # Direct use example
     
-    init()
+    s = pyo.Server()
+    init(s, device_index=1)
+    
     backlight(False)
     led(1,GREEN,ON)
     led(2,RED,ON)

@@ -25,7 +25,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import operator
 import pyo
 import hardware
-from pygame import midi
 
 # Adjust these values to determine which amount of pressure
 # is considered as "Pressed"
@@ -41,17 +40,6 @@ DEFAULT_CURVE_SS2 = 20
 # =====================================================
 # Private stuff
 # =====================================================
-
-
-def _find_device(device_index=1):
-    for name, index in zip(*pyo.pm_get_input_devices()):
-        if name == 'SSCOM MIDI 1':
-            device_index -= 1
-            if device_index == 0:
-                return index
-    
-    raise RuntimeError("Could not find a SoftStep Controller")
-
 
 # Button names/number to midi CC values
 # The numbers can then be offset to find a single sensor
@@ -485,32 +473,21 @@ def display(text):
         
     return inner
     
-    
-def midi_PC(num, output, channel=0):
-    
-    ''' Callback to send a midi program change message '''
-    
-    return lambda: output.set_instrument(num, channel)
-
-
-def midi_CC(num, output, value=None):
-    
-    ''' Callback to send a midi control change message '''
-    
-    return lambda x=value: output.write_short(0xb0, num, x)
-
 
 # =====================================================
 # Initialization and main loop
 # =====================================================
 
 
-def init(server=None, text='Helo', model=1, device_index=1):
+def init(server, text='', model=1, device_index=1):
 
     ''' Initialization. Must be called before creating the "patch".
     
         If several SoftStep's are connected to the computer,
         you can select the one you want with device_index.
+        
+        server must be an unbooted pyo Server.
+        The server will be booted and started by this method.
     '''
 
     if model == 2:
@@ -521,21 +498,7 @@ def init(server=None, text='Helo', model=1, device_index=1):
         DEFAULT_THRESHOLD = DEFAULT_THRESHOLD_SS2
         DEFAULT_CURVE = DEFAULT_CURVE_SS2
     
-    if server is None:
-
-        # make it global so that the object doesn't get garbage-collected
-        global pyo_server
-        
-        pyo_server = pyo.Server()
-        pyo_server.setMidiInputDevice(_find_device(device_index))
-        pyo_server.boot()
-        pyo_server.start()
-    
-    else:
-        
-        server.setMidiInputDevice(_find_device(device_index))
-
-    hardware.init(text, device_index)
+    hardware.init(server, text, device_index)
 
         
 def main_loop():
@@ -549,15 +512,10 @@ def main_loop():
 
 if __name__ == '__main__':
 
-    # Find a suitable midi output. On Linux the default will probably
-    # be an alsa "Midi Through" port, which is convenient for testing
-    # (because clients won't be disconnected when you restart the patch)
-    midi.init()
-    midi_out = midi.Output(midi.get_default_output_id())
-
 
     # Initializes foococo
-    init(model=1) # Use model=2 for a SoftStep 2
+    s = pyo.Server()
+    init(s, model=1) # Use model=2 for a SoftStep 2
     
     # Scroll some text
     Scroller.setText('WELCOME TO FOOCOCO')
@@ -577,14 +535,12 @@ if __name__ == '__main__':
         Press(Button(6), [
             led_on(6),
             display('Pr-6'),
-            midi_PC(6, midi_out),
         ]),
         
         # ... and release
         Release(Button(6), [
             led_off(6),
             display('Re-6'),
-            midi_PC(7, midi_out)
         ]),
         
         # Single action on pressure change
@@ -595,10 +551,7 @@ if __name__ == '__main__':
         # To use the extension pedal, the logical way is
         # to use Pressure, although you might find creative uses
         # with other managers.
-        Pressure(extension_pedal(), [
-            midi_CC(7, midi_out),
-            display('Expr')
-        ]),
+        Pressure(extension_pedal(), display('Expr')),
         
         # You can also emulate expression pedals with
         # "normal" buttons, with vertical movements...
@@ -621,7 +574,7 @@ if __name__ == '__main__':
         Expression(
             up = Button(9),
             down = Button(4),
-            callback= [display('2>'), midi_CC(7, midi_out)]
+            callback=display('2>')
         ),
         
         # To get an on-off pedal, use a MultiState:
@@ -647,7 +600,7 @@ if __name__ == '__main__':
         MultiState(
             next=Button('nav_right'),
             prev=Button('nav_left'),
-            states = [[display('PC%2d' % i), midi_PC(i, midi_out)] for i in range(1,11)]
+            states = [display('PC%2d' % i) for i in range(1,11)]
         )
         
     ]
