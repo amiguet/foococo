@@ -365,6 +365,57 @@ class Expression:
         self.trig_stop = pyo.Thresh(input=up.stream+down.stream, dir=1, threshold=1)
         self.trig_start_f = pyo.TrigFunc(input=self.trig_start, function=self.metro.play)
         self.trig_stop_f = pyo.TrigFunc(input=self.trig_stop, function=self.metro.stop)
+
+# =====================================================
+# Scroll text on LCD Display
+# =====================================================
+
+class Scroller(object):
+    ''' This class groups attributes and methods to scroll
+    text on the LCD display.
+    
+    Don't instatiate this class, use the classmethods.
+    '''
+    
+    def __new__(cls):
+        ''' This class is not meant to be instatiated '''
+        raise Exception("Don't instantiate Scroller. Use the classmethods instead.")
+    
+    @classmethod
+    def setText(cls, text, delay=.2):
+        
+        if text:
+            cls.len = len(text)
+            cls.text = text + '   ' + text[:4]
+            cls.pos = 0
+            cls.metro = pyo.Metro(delay).play()
+            cls.tf = pyo.TrigFunc(cls.metro, cls._update)
+        else:
+            cls.text = ''
+            cls._update()
+            try:
+                cls.metro.stop()
+            except AttributeError: # nothing to scroll yet
+                pass
+    
+    @classmethod
+    def _update(cls):
+        
+        hardware.display(cls.text[cls.pos:cls.pos+4])
+        cls.pos = (cls.pos + 1) % (cls.len+3)
+
+    @classmethod
+    def pause(cls, delay=1):
+      
+        try:
+            metro = cls.metro
+        except AttributeError: # No text scrolling yet, nothing to do
+            return
+            
+        if metro.isPlaying():
+            metro.stop()
+            cls.ca = pyo.CallAfter(cls.metro.play,1)
+
         
 
 # =====================================================
@@ -425,7 +476,7 @@ def display(text):
             l = len(n)
             text = text.ljust(4-l)[:4-l] +n
             
-        
+        Scroller.pause()
         hardware.display(text)
         
     return inner
@@ -500,6 +551,8 @@ if __name__ == '__main__':
     # Initializes foococo
     init(model=1) # Use model=2 for a SoftStep 2
     
+    # Scroll some text
+    Scroller.setText('WELCOME TO FOOCOCO')
     
     # The main patch
     # Building a list is just a way to keep the objects referenced
