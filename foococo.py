@@ -500,6 +500,10 @@ def init(server, text='', model=1, device_index=1):
     
     hardware.init(server, text, device_index)
 
+def close(text='', back_to_standalone_mode=True):
+    
+    hardware.close(text, back_to_standalone_mode)
+
         
 def main_loop():
 

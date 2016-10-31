@@ -94,10 +94,10 @@ def init(server, text='', device_index=1):
     reset_leds()
 
 
-def close(back_to_standalone_mode=True):
+def close(text='', back_to_standalone_mode=True):
     '''Closes the device and optionnaly returns to standalone mode'''
     
-    display('Bye')
+    display(text)
     reset_leds()
     
     if back_to_standalone_mode:
