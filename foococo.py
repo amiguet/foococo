@@ -350,7 +350,7 @@ class Expression:
             
             changed()
         
-        self.metro = pyo.Metro(time=.01)
+        self.metro = pyo.Metro(time=.1)
         self.metro_f = pyo.TrigFunc(input=self.metro, function=update)
         
         self.trig_start = pyo.Thresh(input=up.stream+down.stream, dir=0, threshold=DEFAULT_THRESHOLD)
