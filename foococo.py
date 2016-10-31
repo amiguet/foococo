@@ -108,67 +108,49 @@ def _single_callback_or_list(cb):
 # =====================================================
 
 
-class Button():
+def button(base, corner=None):
     
-    ''' A class to represent the foot controller's sensors.
+    ''' A pyo.Midictl wrapper to conviently access the SoftStep's buttons
+        
+    Examples:
     
-    These can be "whole buttons", corners, or combinations thereof. '''
+    # The right arrow on the nav pad
+    button('nav_right')
     
+    # The button with number 1 (sum of 4 sensors, clipped to 0-127)
+    button(1)
     
-    def __init__(self, base, corner=None):
+    # Top of button 1
+    button(1,'t')
     
-        ''' Creates a new Button.
-        
-        Examples:
-        
-        # The right arrow on the nav pad
-        Button('nav_right')
-        
-        # The button with number 1 (sum of 4 sensors, clipped to 0-127)
-        Button(1)
-        
-        # Top of button 1
-        Button(1,'t')
-        
-        # Top-left corner of button 1 (SoftStep 1 only)
-        Button(1,'tl')
-        
-        '''
-        
-        if isinstance(base, pyo.PyoObject): # internal use: build button from other buttons
-            self.stream = base
-            return
-        
-        if isinstance(base, str): # one of the nav_* buttons
-            self.stream = _midi_stream(_button2CC[base])
-            return
+    # Top-left corner of button 1 (SoftStep 1 only)
+    button(1,'tl')
     
-        if corner is not None:
-            try:
-                self.stream = _midi_stream(_button2CC[base] + _corner2offset[corner])
-                return
-            except KeyError: # t/l/b/r for SoftStep 1 is a combination of sensors
-                if corner in ['t', 'l', 'b', 'r']:
-                    offsets = [v for k, v in _corner2offset.iteritems() if corner in k]
-                    source = [_midi_stream(_button2CC[base]+offset) for offset in offsets]
-                else: # invalid corner specification
-                    raise
-                    
-        else: # combine the four sensors under one numbered button
-            source = [_midi_stream(_button2CC[base]+offset) for offset in range(4)]
+    '''
         
-        # If we got here, we've got a combination of sensors to sum-clip
-        sum = reduce(operator.add, source)
-        self.stream = pyo.Clip(sum, min=0, max=1)
+    
+    if isinstance(base, str): # one of the nav_* buttons
+        stream = _midi_stream(_button2CC[base])
+        return stream
+    
+    if corner is not None:
+        try:
+            stream = _midi_stream(_button2CC[base] + _corner2offset[corner])
+            return stream
+        except KeyError: # t/l/b/r for SoftStep 1 is a combination of sensors
+            if corner in ['t', 'l', 'b', 'r']:
+                offsets = [v for k, v in _corner2offset.iteritems() if corner in k]
+                source = [_midi_stream(_button2CC[base]+offset) for offset in offsets]
+            else: # invalid corner specification
+                raise
+                
+    else: # combine the four sensors under one numbered button
+        source = [_midi_stream(_button2CC[base]+offset) for offset in range(4)]
+    
+    # If we got here, we've got a combination of sensors to sum-clip
+    sum = reduce(operator.add, source)
+    return pyo.Clip(sum, min=0, max=1)
             
-            
-    def __add__(self, other):
-        
-        ''' Adds the values of two buttons, clipping to 0-127 '''
-        
-        new_stream = pyo.Clip(self.stream + other.stream, min=0, max=127)
-        return Button(new_stream)
-    
 
 def extension_pedal():
 
@@ -189,7 +171,7 @@ def extension_pedal():
         stream.setInterpolation(0)
         _midi_streams[cc_num] = stream
     
-    return Button(stream)
+    return stream
 
 # =====================================================
 # Events handlers: press, pressure, ...
@@ -225,7 +207,7 @@ class Press:
         
         dir = Press.dir2num[dir]
         
-        self.trig = pyo.Thresh(input=source.stream, threshold=threshold, dir=dir)
+        self.trig = pyo.Thresh(input=source, threshold=threshold, dir=dir)
         
         if callback:
             inner = _single_callback_or_list(callback)
@@ -266,11 +248,11 @@ class MultiState:
         self.state = -1
         self.next()
         
-        self.trig = pyo.Thresh(input=next.stream, threshold=threshold)
+        self.trig = pyo.Thresh(input=next, threshold=threshold)
         self.trig_f = pyo.TrigFunc(input=self.trig, function=self.next)
         
         if prev is not None:
-            self.prev_trig = pyo.Thresh(input=prev.stream, threshold=threshold)
+            self.prev_trig = pyo.Thresh(input=prev, threshold=threshold)
             self.prev_trig_f = pyo.TrigFunc(input=self.prev_trig, function=self.prev)
     
     def next(self):
@@ -294,11 +276,11 @@ class Pressure:
         if isinstance(callback, list):
             def inner():
                 for c in callback:
-                    c(int(source.stream.get()*100))
+                    c(int(source.get()*100))
         else:
-            inner = lambda: callback(int(source.stream.get()*100))
+            inner = lambda: callback(int(source.get()*100))
         
-        self.trig = pyo.Change(source.stream)
+        self.trig = pyo.Change(source)
         self.trig_f = pyo.TrigFunc(input=self.trig, function=inner)
     
 
@@ -336,7 +318,7 @@ class Expression:
         
 
         def update():
-            diff = up.stream.get() - down.stream.get()
+            diff = up.get() - down.get()
             
             # Change the curve: fine control when diff is small
             # but still fast change when diff is big
@@ -353,8 +335,8 @@ class Expression:
         self.metro = pyo.Metro(time=.1)
         self.metro_f = pyo.TrigFunc(input=self.metro, function=update)
         
-        self.trig_start = pyo.Thresh(input=up.stream+down.stream, dir=0, threshold=DEFAULT_THRESHOLD)
-        self.trig_stop = pyo.Thresh(input=up.stream+down.stream, dir=1, threshold=DEFAULT_THRESHOLD)
+        self.trig_start = pyo.Thresh(input=up+down, dir=0, threshold=DEFAULT_THRESHOLD)
+        self.trig_stop = pyo.Thresh(input=up+down, dir=1, threshold=DEFAULT_THRESHOLD)
         self.trig_start_f = pyo.TrigFunc(input=self.trig_start, function=self.metro.play)
         self.trig_stop_f = pyo.TrigFunc(input=self.trig_stop, function=self.metro.stop)
 
@@ -545,16 +527,16 @@ if __name__ == '__main__':
         # Single action on single press:
         # Flash led #1 when button 1 is pressed
         # (might be more useful with a midi_PC(1, midi_out), though)
-        Press(Button(1), flash(1)),
+        Press(button(1), flash(1)),
         
         # Several actions on single press...
-        Press(Button(6), [
+        Press(button(6), [
             led_on(6),
             display('Pr-6'),
         ]),
         
         # ... and release
-        Release(Button(6), [
+        Release(button(6), [
             led_off(6),
             display('Re-6'),
         ]),
@@ -562,7 +544,7 @@ if __name__ == '__main__':
         # Single action on pressure change
         # In this case, the display action also displays
         # the pressure value
-        Pressure(Button(2), display('2>')),
+        Pressure(button(2), display('2>')),
         
         # To use the extension pedal, the logical way is
         # to use Pressure, although you might find creative uses
@@ -572,15 +554,15 @@ if __name__ == '__main__':
         # You can also emulate expression pedals with
         # "normal" buttons, with vertical movements...
         Expression(
-            up = Button(3,'t'),
-            down = Button(3,'b'),
+            up = button(3,'t'),
+            down = button(3,'b'),
             callback= display('V')
         ),
         
         # Or horizontal
         Expression(
-            up = Button(8,'r'),
-            down = Button(8,'l'),
+            up = button(8,'r'),
+            down = button(8,'l'),
             callback= display('H')
         ),
         
@@ -588,14 +570,14 @@ if __name__ == '__main__':
         # TWO different buttons (AFAICT this is not available
         # in KMI's software)
         Expression(
-            up = Button(9),
-            down = Button(4),
+            up = button(9),
+            down = button(4),
             callback=display('2>')
         ),
         
         # To get an on-off pedal, use a MultiState:
         MultiState(
-            Button(5),
+            button(5),
             [
                 led_on(5, 'green'),
                 led_on(5, 'red'),
@@ -604,7 +586,7 @@ if __name__ == '__main__':
         
         # Or, with several actions par state:
         MultiState(
-            Button(0),
+            button(0),
             [
                 [led_on(0, 'red'), display('off')],
                 [led_on(0, 'green'), display('on')],
@@ -614,8 +596,8 @@ if __name__ == '__main__':
         # MultiState can also have more than two states
         # (also not available in KMI's software, I think)
         MultiState(
-            next=Button('nav_right'),
-            prev=Button('nav_left'),
+            next=button('nav_right'),
+            prev=button('nav_left'),
             states = [display('PC%2d' % i) for i in range(1,11)]
         )
         
