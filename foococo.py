@@ -512,10 +512,22 @@ def main_loop():
 
 if __name__ == '__main__':
 
+    import sys
+    
+    try:
+        model = int(sys.argv[1])
+    except:
+        model = 1
+        
+    try:
+        device_index = int(sys.argv[2])
+    except:
+        device_index = 1
+
 
     # Initializes foococo
     s = pyo.Server()
-    init(s, model=1) # Use model=2 for a SoftStep 2
+    init(s, model=model, device_index=device_index)
     
     # Scroll some text
     Scroller.setText('WELCOME TO FOOCOCO')
