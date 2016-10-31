@@ -82,11 +82,11 @@ _corner2offset_SS2 = { # SoftStep 2
 
 # pyo midi streams are made singletons for efficiency
 _midi_streams = {}
-def _midi_stream(cc_num):
+def _midi_stream(cc_num, **kwargs):
     try:
         return _midi_streams[cc_num]
     except KeyError:
-        stream = pyo.Midictl(ctlnumber=cc_num)
+        stream = pyo.Midictl(ctlnumber=cc_num, **kwargs)
         stream.setInterpolation(0)
         _midi_streams[cc_num] = stream
         return stream
@@ -152,7 +152,7 @@ def button(base, corner=None):
     return pyo.Clip(sum, min=0, max=1)
             
 
-def extension_pedal():
+def extension_pedal(calib_min=None, calib_max=None):
 
     ''' Returns a "button" corresponding to the extension pedal '''
 
@@ -160,16 +160,14 @@ def extension_pedal():
     # 0, when fully "opened").
     # This is why we need some special code for that device.
 
-    # TODO: pedal calibration
-
-    cc_num = 86
-
-    try:
-        stream = _midi_streams[cc_num]
-    except KeyError:
-        stream = pyo.Midictl(ctlnumber=cc_num, minscale=1, maxscale=0)
-        stream.setInterpolation(0)
-        _midi_streams[cc_num] = stream
+    stream = _midi_stream(
+        cc_num=86,
+        minscale=1,
+        maxscale=0,
+    )
+    
+    if calib_min or calib_max:
+        stream = pyo.Scale(stream, calib_min, calib_max, 0, 1)
     
     return stream
 
@@ -512,7 +510,7 @@ if __name__ == '__main__':
 
 
     # Initializes foococo
-    s = pyo.Server()
+    s = pyo.Server(audio='jack')
     init(s, model=model, device_index=device_index)
     
     # Scroll some text
@@ -549,7 +547,7 @@ if __name__ == '__main__':
         # To use the extension pedal, the logical way is
         # to use Pressure, although you might find creative uses
         # with other managers.
-        Pressure(extension_pedal(), display('Expr')),
+        Pressure(extension_pedal(calib_min=.1, calib_max=.9), display('Expr')),
         
         # You can also emulate expression pedals with
         # "normal" buttons, with vertical movements...
