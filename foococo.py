@@ -29,8 +29,8 @@ import hardware
 # Adjust these values to determine which amount of pressure
 # is considered as "Pressed"
 # Note: SS2's sensors are much more sensitive than SS1's.
-DEFAULT_THRESHOLD = 5
-DEFAULT_THRESHOLD_SS2 = 40
+DEFAULT_THRESHOLD = .03
+DEFAULT_THRESHOLD_SS2 = .3
 
 # Default curve for Expression object
 # higher values mean better control at slow speed
@@ -86,7 +86,7 @@ def _midi_stream(cc_num):
     try:
         return _midi_streams[cc_num]
     except KeyError:
-        stream = pyo.Midictl(ctlnumber=cc_num, minscale=0, maxscale=127)
+        stream = pyo.Midictl(ctlnumber=cc_num)
         stream.setInterpolation(0)
         _midi_streams[cc_num] = stream
         return stream
@@ -159,7 +159,7 @@ class Button():
         
         # If we got here, we've got a combination of sensors to sum-clip
         sum = reduce(operator.add, source)
-        self.stream = pyo.Clip(sum, min=0, max=127)
+        self.stream = pyo.Clip(sum, min=0, max=1)
             
             
     def __add__(self, other):
@@ -185,7 +185,7 @@ def extension_pedal():
     try:
         stream = _midi_streams[cc_num]
     except KeyError:
-        stream = pyo.Midictl(ctlnumber=cc_num, minscale=127, maxscale=0)
+        stream = pyo.Midictl(ctlnumber=cc_num, minscale=1, maxscale=0)
         stream.setInterpolation(0)
         _midi_streams[cc_num] = stream
     
@@ -294,9 +294,9 @@ class Pressure:
         if isinstance(callback, list):
             def inner():
                 for c in callback:
-                    c(int(source.stream.get()))
+                    c(int(source.stream.get()*100))
         else:
-            inner = lambda: callback(int(source.stream.get()))
+            inner = lambda: callback(int(source.stream.get()*100))
         
         self.trig = pyo.Change(source.stream)
         self.trig_f = pyo.TrigFunc(input=self.trig, function=inner)
@@ -330,9 +330,9 @@ class Expression:
         if isinstance(callback, list):
             def changed():
                 for c in callback:
-                    c(int(self.value))
+                    c(int(self.value*100))
         else:
-            changed = lambda: callback(int(self.value))
+            changed = lambda: callback(int(self.value*100))
         
 
         def update():
@@ -340,11 +340,11 @@ class Expression:
             
             # Change the curve: fine control when diff is small
             # but still fast change when diff is big
-            diff = (diff/127.0)**curve
+            diff = (diff)**curve
             
             self.value += diff
-            if self.value > 127:
-                self.value = 127
+            if self.value > 1:
+                self.value = 1
             elif self.value < 0:
                 self.value = 0
             
@@ -353,8 +353,8 @@ class Expression:
         self.metro = pyo.Metro(time=.01)
         self.metro_f = pyo.TrigFunc(input=self.metro, function=update)
         
-        self.trig_start = pyo.Thresh(input=up.stream+down.stream, dir=0)
-        self.trig_stop = pyo.Thresh(input=up.stream+down.stream, dir=1, threshold=1)
+        self.trig_start = pyo.Thresh(input=up.stream+down.stream, dir=0, threshold=DEFAULT_THRESHOLD)
+        self.trig_stop = pyo.Thresh(input=up.stream+down.stream, dir=1, threshold=DEFAULT_THRESHOLD)
         self.trig_start_f = pyo.TrigFunc(input=self.trig_start, function=self.metro.play)
         self.trig_stop_f = pyo.TrigFunc(input=self.trig_stop, function=self.metro.stop)
 
