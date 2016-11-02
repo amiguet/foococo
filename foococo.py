@@ -360,8 +360,11 @@ class Scroller(object):
             cls.len = len(text)
             cls.text = text + '   ' + text[:4]
             cls.pos = 0
-            cls.metro = pyo.Metro(delay).play()
-            cls.tf = pyo.TrigFunc(cls.metro, cls._update)
+            try:
+                cls.metro.play()
+            except AttributeError: # nothing to scroll yet
+                cls.metro = pyo.Metro(delay).play()
+                cls.tf = pyo.TrigFunc(cls.metro, cls._update)
         else:
             cls.text = ''
             cls._update()
