@@ -306,7 +306,10 @@ class MultiState:
         
         if self.state is None:
             self.state = -1
-            self.next()
+        else:
+            self.state -= 1
+        
+        self.next()
         
         
         return self
