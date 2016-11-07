@@ -31,7 +31,6 @@ import sysex
 
 GREEN = 0
 RED = 1
-YELLOW = 2
 
 OFF = 0
 ON = 1
@@ -115,19 +114,21 @@ def backlight(b):
 def led(number, color, mode):
     '''Sets led number <led> (numbered from 1 to 10) to given color and mode'''
     
-    pyo_server.ctlout(40,number-1) # select led, numbered from 0
-    pyo_server.ctlout(41,color) # green = 0, red = 1, yellow = 2
-    pyo_server.ctlout(42,mode) # range(x) = (off, on, blink, fast, flash)
-    pyo_server.ctlout(0,0)
-    pyo_server.ctlout(0,0)
-    pyo_server.ctlout(0,0)
+    if color == 0:
+        ctl = 109 + number
+    elif color == 1:
+        ctl = 19 + number
+    else:
+        raise NotImplementedError
 
+    pyo_server.ctlout(ctl, mode)
+    
 
 def reset_leds():
     '''Switch all leds off'''
     
     for l in range(1,11):
-        for c in range(3):
+        for c in range(2):
             led(l,c,0)
 
 
@@ -154,17 +155,28 @@ if __name__ == '__main__':
     backlight(False)
     led(1,GREEN,ON)
     led(2,RED,ON)
-    led(3,YELLOW,ON)
+    led(3,3,ON)
     
     import time
     time.sleep(2)
     
     backlight(True)
     display('Cool')
-    led(6,GREEN,BLINK)
-    led(7,RED,FAST_BLINK)
-    led(8,YELLOW,FLASH)
     
+    # invert colors of 1 & 2
+    led(1,RED,ON)
+    led(2,GREEN, ON)
+
+    # test blink & flash
+    led(6,GREEN,BLINK)
+    led(7,RED,FLASH)
+    
+    # test blink combined with led on
+    led(3,RED,ON)
+    led(3,GREEN,FAST_BLINK)
+    
+    led(8,GREEN,ON)
+    led(8, RED, BLINK)
     time.sleep(2)
     
     backlight(False)
