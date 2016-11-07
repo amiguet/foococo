@@ -511,16 +511,17 @@ def led_on(num, color='green'):
     return lambda: hardware.led(num, color, mode)
 
 
-def led_off(num):
+def led_off(nums):
     
     ''' Callback to switch off led number num '''
     
     mode = hardware.OFF
-    if num == 0:
-        num = 10
+    
+    if not isinstance(nums, list):
+        nums = [nums]
     
     # To be sure to switch off, we have to make it for every color
-    return lambda: [hardware.led(num, c, mode) for c in range(3)]
+    return lambda: [hardware.led(num % 10, c, mode) for c in range(2) for num in nums]
 
 
 def display(text):
