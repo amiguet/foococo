@@ -210,6 +210,22 @@ class Press:
         if callback:
             inner = _single_callback_or_list(callback)
             self.trig_f = pyo.TrigFunc(input=self.trig, function=inner)
+            
+        
+    def stop(self):
+        
+        self.trig.stop()
+        self.trig_f.stop()
+        
+        return self
+    
+    def play(self):
+        
+        self.trig.play()
+        self.trig_f.play()    
+        
+        return self
+            
 
 def Release(source, callback=None, threshold=None):
     
@@ -222,7 +238,7 @@ class MultiState:
     
     ''' Rotate a list of states each time a button is pressed. '''
     
-    def __init__(self, next, states, prev=None, threshold=None):
+    def __init__(self, next, states, prev=None, threshold=None, init=0):
         
         ''' Creates a MultiState manager.
         
@@ -243,8 +259,11 @@ class MultiState:
         self.states = [_single_callback_or_list(s) for s in states]
         self.length = len(states)
         
-        self.state = -1
-        self.next()
+        if init is not None:
+            self.state = init-1
+            self.next()
+        else:
+            self.state = None
         
         self.trig = pyo.Thresh(input=next, threshold=threshold)
         self.trig_f = pyo.TrigFunc(input=self.trig, function=self.next)
@@ -252,6 +271,9 @@ class MultiState:
         if prev is not None:
             self.prev_trig = pyo.Thresh(input=prev, threshold=threshold)
             self.prev_trig_f = pyo.TrigFunc(input=self.prev_trig, function=self.prev)
+            self.prev = True
+        else:
+            self.prev = False
     
     def next(self):
         
@@ -263,6 +285,32 @@ class MultiState:
         
         self.state = (self.state - 1) % self.length
         self.states[self.state]()
+
+    def stop(self):
+        
+        self.trig.stop()
+        self.trig_f.stop()
+        if self.prev:
+            self.prev_trig.stop()
+            self.prev_trig_f.stop()
+        
+        return self
+    
+    def play(self):
+        
+        self.trig.play()
+        self.trig_f.play()
+        if self.prev:
+            self.prev_trig.play()
+            self.prev_trig_f.play()
+        
+        if self.state is None:
+            self.state = -1
+            self.next()
+        
+        
+        return self
+        
 
 
 class Pressure:
@@ -280,6 +328,22 @@ class Pressure:
         
         self.trig = pyo.Change(source)
         self.trig_f = pyo.TrigFunc(input=self.trig, function=inner)
+
+    def stop(self):
+        
+        for o in [self.trig, self.trig_f]:
+            o.stop()
+            
+        return self
+    
+    
+    def play(self):
+        
+        for o in [self.trig, self.trig_f]:
+            o.play()
+
+        return self
+
     
 
 class Expression:
@@ -338,6 +402,21 @@ class Expression:
         self.trig_start_f = pyo.TrigFunc(input=self.trig_start, function=self.metro.play)
         self.trig_stop_f = pyo.TrigFunc(input=self.trig_stop, function=self.metro.stop)
 
+    def stop(self):
+        
+        for o in [self.trig_start, self.trig_stop, self.trig_start_f, self.trig_stop_f]:
+            o.stop()
+            
+        return self
+    
+    
+    def play(self):
+        
+        for o in [self.trig_start, self.trig_stop, self.trig_start_f, self.trig_stop_f]:
+            o.play()
+
+        return self
+
 # =====================================================
 # Scroll text on LCD Display
 # =====================================================
@@ -346,12 +425,21 @@ class Scroller(object):
     ''' This class groups attributes and methods to scroll
     text on the LCD display.
     
-    Don't instatiate this class, use the classmethods.
+    To simpy scroll a text, user the classmethod setText().
+    
+    To get a playable/stoppable object that scrolls text,
+    instantiate the class.
     '''
     
-    def __new__(cls):
-        ''' This class is not meant to be instatiated '''
-        raise Exception("Don't instantiate Scroller. Use the classmethods instead.")
+    def __init__(self, text):
+        self.text = text
+    
+    def play(self):
+        self.__class__.setText(self.text)
+    
+    def stop(self):
+        self.__class__.setText('')
+
     
     @classmethod
     def setText(cls, text, delay=.2):
@@ -367,6 +455,8 @@ class Scroller(object):
                 cls.tf = pyo.TrigFunc(cls.metro, cls._update)
         else:
             cls.text = ''
+            cls.pos = 0
+            cls.len = 0
             cls._update()
             try:
                 cls.metro.stop()
