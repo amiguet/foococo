@@ -152,7 +152,7 @@ def button(base, corner=None):
     return pyo.Clip(sum, min=0, max=1)
             
 
-def extension_pedal(calib_min=None, calib_max=None):
+def extension_pedal():
 
     ''' Returns a "button" corresponding to the extension pedal '''
 
@@ -160,16 +160,27 @@ def extension_pedal(calib_min=None, calib_max=None):
     # 0, when fully "opened").
     # This is why we need some special code for that device.
 
+    if extension_pedal.stream is not None:
+        return extension_pedal.stream
+
     stream = _midi_stream(
         cc_num=86,
         minscale=1,
         maxscale=0,
     )
     
-    if calib_min or calib_max:
-        stream = pyo.Scale(stream, calib_min, calib_max, 0, 1)
+    if extension_pedal.min is not None:
+        stream = pyo.Scale(stream, extension_pedal.min, extension_pedal.max, 0, 1)
     
     return stream
+
+def calibrate_pedal(min=0, max=1):
+    extension_pedal.min = min
+    extension_pedal.max = max
+
+extension_pedal.min = None
+extension_pedal.max = None
+extension_pedal.stream = None
 
 # =====================================================
 # Events handlers: press, pressure, ...
@@ -613,6 +624,9 @@ if __name__ == '__main__':
     # Scroll some text
     Scroller.setText('WELCOME TO FOOCOCO')
     
+    # Calibrate pedal
+    calibrate_pedal(0.05,0.95)
+    
     # The main patch
     # Building a list is just a way to keep the objects referenced
     # so that they don't get garbage-collected.
@@ -644,7 +658,7 @@ if __name__ == '__main__':
         # To use the extension pedal, the logical way is
         # to use Pressure, although you might find creative uses
         # with other managers.
-        Pressure(extension_pedal(calib_min=.1, calib_max=.9), display('Expr')),
+        Pressure(extension_pedal(), display('Expr')),
         
         # You can also emulate expression pedals with
         # "normal" buttons, with vertical movements...
