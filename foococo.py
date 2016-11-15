@@ -517,6 +517,13 @@ def flash(num, color='green'):
     
     return lambda: hardware.led(num, color, mode)
 
+def blink(num, color='green', fast=False):
+    
+    mode = hardware.FAST_BLINK if fast else hardware.BLINK
+    color = getattr(hardware, color.upper())
+    
+    return lambda: hardware.led(num, color, mode)
+
 
 def led_on(num, color='green'):
     
