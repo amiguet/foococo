@@ -296,6 +296,11 @@ class MultiState:
         
         self.state = (self.state - 1) % self.length
         self.states[self.state]()
+    
+    def activate(self, n):
+        
+        self.state = n - 1
+        self.next()
 
     def stop(self):
         
