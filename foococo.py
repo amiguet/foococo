@@ -34,8 +34,8 @@ DEFAULT_THRESHOLD_SS2 = .3
 
 # Default curve for Expression object
 # higher values mean better control at slow speed
-DEFAULT_CURVE = 2
-DEFAULT_CURVE_SS2 = 20
+DEFAULT_CURVE = 1
+DEFAULT_CURVE_SS2 = 2
 
 # =====================================================
 # Private stuff
@@ -148,7 +148,7 @@ def button(base, corner=None):
         source = [_midi_stream(_button2CC[base]+offset) for offset in range(4)]
     
     # If we got here, we've got a combination of sensors to sum-clip
-    sum = reduce(operator.add, source)
+    sum = reduce(operator.add, source) / (1.0*len(source))
     return pyo.Clip(sum, min=0, max=1)
             
 
