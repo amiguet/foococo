@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import pyo
-import sysex
+from . import sysex
 
 # CONSTANTS
 
@@ -63,7 +63,10 @@ def _standalone(b):
     _sys_ex(0, sysex.messages['tether'][1-standalone])
 
 def _sys_ex(_, message):
-    msg = ''.join([chr(n) for n in message])
+    # if python2 compatibility is unimportant, bytes(message) is enough.
+    # this py2-3 compatible solution was found on
+    # https://stackoverflow.com/questions/14043886/python-2-3-convert-integer-to-bytes-cleanly
+    msg = bytes(bytearray(message))
     pyo_server.sysexout(msg)
 
 
@@ -155,7 +158,7 @@ if __name__ == '__main__':
     backlight(False)
     led(1,GREEN,ON)
     led(2,RED,ON)
-    led(3,3,ON)
+    led(3,GREEN,ON)
     
     import time
     time.sleep(2)

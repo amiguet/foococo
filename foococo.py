@@ -23,8 +23,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import operator
+from functools import wraps
 import pyo
-import hardware
+from . import hardware
 
 # Adjust these values to determine which amount of pressure
 # is considered as "Pressed"
@@ -36,6 +37,28 @@ DEFAULT_THRESHOLD_SS2 = .3
 # higher values mean better control at slow speed
 DEFAULT_CURVE = 1
 DEFAULT_CURVE_SS2 = 2
+
+# =====================================================
+# Memoization
+# =====================================================
+
+def unique_unstoppable_pyoObject(f):
+    #return f
+    f.memotable = {}
+    @wraps(f)
+    def inner(*args, **kwargs):
+        try:
+            return f.memotable[args]
+        except KeyError:    
+            result = f(*args, **kwargs)
+            try:
+                result.allowAutoStart(False)
+            except AttributeError: # older version of pyo
+                pass
+        f.memotable[args] = result
+        return result
+    return inner
+
 
 # =====================================================
 # Private stuff
@@ -80,16 +103,11 @@ _corner2offset_SS2 = { # SoftStep 2
     'b' : 3,
 }
 
-# pyo midi streams are made singletons for efficiency
-_midi_streams = {}
+
+@unique_unstoppable_pyoObject
 def _midi_stream(cc_num, **kwargs):
-    try:
-        return _midi_streams[cc_num]
-    except KeyError:
-        stream = pyo.Midictl(ctlnumber=cc_num, **kwargs)
-        stream.setInterpolation(0)
-        _midi_streams[cc_num] = stream
-        return stream
+
+        return pyo.Midictl(ctlnumber=cc_num, **kwargs)
 
 
 def _single_callback_or_list(cb):
@@ -107,7 +125,7 @@ def _single_callback_or_list(cb):
 # Get access to raw values: Buttons & expression pedal
 # =====================================================
 
-
+@unique_unstoppable_pyoObject
 def button(base, corner=None):
     
     ''' A pyo.Midictl wrapper to conviently access the SoftStep's buttons
@@ -139,7 +157,7 @@ def button(base, corner=None):
             return stream
         except KeyError: # t/l/b/r for SoftStep 1 is a combination of sensors
             if corner in ['t', 'l', 'b', 'r']:
-                offsets = [v for k, v in _corner2offset.iteritems() if corner in k]
+                offsets = [v for k, v in _corner2offset.items() if corner in k]
                 source = [_midi_stream(_button2CC[base]+offset) for offset in offsets]
             else: # invalid corner specification
                 raise
@@ -147,11 +165,11 @@ def button(base, corner=None):
     else: # combine the four sensors under one numbered button
         source = [_midi_stream(_button2CC[base]+offset) for offset in range(4)]
     
-    # If we got here, we've got a combination of sensors to sum-clip
-    sum = reduce(operator.add, source) / (1.0*len(source))
-    return pyo.Clip(sum, min=0, max=1)
-            
+    # If we got here, we've got a combination of sensors to sum and scale
+    return pyo.Mix(source, voices=1, mul=1.0/len(source))
 
+            
+@unique_unstoppable_pyoObject
 def extension_pedal():
 
     ''' Returns a "button" corresponding to the extension pedal '''
@@ -159,9 +177,6 @@ def extension_pedal():
     # The raw values for the pedal are reversed (127 when pedal fully "closed"
     # 0, when fully "opened").
     # This is why we need some special code for that device.
-
-    if extension_pedal.stream is not None:
-        return extension_pedal.stream
 
     stream = _midi_stream(
         cc_num=86,
@@ -180,7 +195,7 @@ def calibrate_pedal(min=0, max=1):
 
 extension_pedal.min = None
 extension_pedal.max = None
-extension_pedal.stream = None
+
 
 # =====================================================
 # Events handlers: press, pressure, ...
@@ -383,7 +398,7 @@ class Expression:
     
     '''
     
-    def __init__(self, up, down, callback, init=0, curve=None):
+    def __init__(self, up, down, callback, init=0, curve=None, max_speed=1):
         
         if curve is None:
             curve = DEFAULT_CURVE*2+1
@@ -405,6 +420,11 @@ class Expression:
             # but still fast change when diff is big
             diff = (diff)**curve
             
+            if diff > max_speed:
+                diff = max_speed
+            elif diff < -max_speed:
+                diff = -max_speed
+            
             self.value += diff
             if self.value > 1:
                 self.value = 1
@@ -413,8 +433,8 @@ class Expression:
             
             changed()
         
-        self.metro = pyo.Metro(time=.1)
-        self.metro_f = pyo.TrigFunc(input=self.metro, function=update)
+        self.metro = pyo.Pattern(update, time=.1)
+        # self.metro_f = pyo.TrigFunc(input=self.metro, function=update)
         
         self.trig_start = pyo.Thresh(input=up+down, dir=0, threshold=DEFAULT_THRESHOLD)
         self.trig_stop = pyo.Thresh(input=up+down, dir=1, threshold=DEFAULT_THRESHOLD)
@@ -423,7 +443,7 @@ class Expression:
 
     def stop(self):
         
-        for o in [self.trig_start, self.trig_stop, self.trig_start_f, self.trig_stop_f]:
+        for o in [self.trig_start, self.trig_stop, self.trig_start_f, self.trig_stop_f, self.metro]:
             o.stop()
             
         return self
