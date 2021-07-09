@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import operator
 from functools import wraps
+from collections import deque
 import pyo
 from . import hardware
 
@@ -37,6 +38,10 @@ DEFAULT_THRESHOLD_SS2 = .3
 # higher values mean better control at slow speed
 DEFAULT_CURVE = 1
 DEFAULT_CURVE_SS2 = 2
+
+# When there are multiple callbacks, spread them in time
+# by this amount (in seconds)
+TIME_SPREAD = 0.001
 
 # =====================================================
 # Memoization
@@ -110,15 +115,32 @@ def _midi_stream(cc_num, **kwargs):
         return pyo.Midictl(ctlnumber=cc_num, **kwargs)
 
 
-def _single_callback_or_list(cb):
-    
+task_queue = deque()
+
+def execute_next_task():
+
+    try:
+        task = task_queue.popleft()
+    except IndexError:
+        task_executor.stop()
+    else:
+        task()
+
+
+def _single_callback_or_list(cb, immediately=False):
+
     if isinstance(cb, list):
-        def inner():
-            for c in cb:
-                c()
+        if immediately:
+            def inner():
+                for c in cb:
+                    c()
+        else:
+            def inner():
+                task_queue.extend(cb)
+                task_executor.play()
     else:
         inner = cb
-    
+
     return inner
 
 # =====================================================
@@ -212,7 +234,7 @@ class Press:
         'both': 2,
     }
     
-    def __init__(self, source, callback=None, threshold=None, dir='down'):
+    def __init__(self, source, callback=None, threshold=None, dir='down', immediate_cb=False):
         
         ''' Create a new Press-event manager.
         
@@ -224,6 +246,9 @@ class Press:
         dir is the direction of the foot: 'down' corresponds to presses
         and up to releases (but for code clarity use the Release fonction)
         
+        if immediate_cb is true and callback is a list, all the callbacks will be called
+        in the same pyo cycle, possibly causing dropouts. The default false value spreads
+        the callbacks over time.
         '''
         
         if threshold is None:
@@ -234,7 +259,7 @@ class Press:
         self.trig = pyo.Thresh(input=source, threshold=threshold, dir=dir)
         
         if callback:
-            inner = _single_callback_or_list(callback)
+            inner = _single_callback_or_list(callback, immediately=immediate_cb)
             self.trig_f = pyo.TrigFunc(input=self.trig, function=inner)
             
         
@@ -264,7 +289,7 @@ class MultiState:
     
     ''' Rotate a list of states each time a button is pressed. '''
     
-    def __init__(self, next, states, prev=None, threshold=None, init=0):
+    def __init__(self, next, states, prev=None, threshold=None, init=0, immediate_cb=False):
         
         ''' Creates a MultiState manager.
         
@@ -277,12 +302,15 @@ class MultiState:
         
         NB: the first state in states will be executed when the MultiState is created.
         
+        if immediate_cb is true and callback is a list, all the callbacks will be called
+        in the same pyo cycle, possibly causing dropouts. The default false value spreads
+        the callbacks over time.
         '''
         
         if threshold is None:
             threshold=DEFAULT_THRESHOLD
         
-        self.states = [_single_callback_or_list(s) for s in states]
+        self.states = [_single_callback_or_list(s, immediate_cb) for s in states]
         self.length = len(states)
         
         if init is not None:
@@ -616,8 +644,10 @@ def init(server, text='', model=1, device_index=1):
         _corner2offset = _corner2offset_SS2
         DEFAULT_THRESHOLD = DEFAULT_THRESHOLD_SS2
         DEFAULT_CURVE = DEFAULT_CURVE_SS2
-    
+
     hardware.init(server, text, device_index)
+    global task_executor
+    task_executor = pyo.Pattern(execute_next_task, time=TIME_SPREAD)
 
 def close(text='', back_to_standalone_mode=True):
     
