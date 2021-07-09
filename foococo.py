@@ -434,7 +434,6 @@ class Expression:
             changed()
         
         self.metro = pyo.Pattern(update, time=.1)
-        # self.metro_f = pyo.TrigFunc(input=self.metro, function=update)
         
         self.trig_start = pyo.Thresh(input=up+down, dir=0, threshold=DEFAULT_THRESHOLD)
         self.trig_stop = pyo.Thresh(input=up+down, dir=1, threshold=DEFAULT_THRESHOLD)
