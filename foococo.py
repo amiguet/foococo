@@ -263,10 +263,10 @@ class Press:
             self.trig_f = pyo.TrigFunc(input=self.trig, function=inner)
             
         
-    def stop(self):
+    def stop(self, wait=0):
         
-        self.trig.stop()
-        self.trig_f.stop()
+        self.trig.stop(wait)
+        self.trig_f.stop(wait)
         
         return self
     
@@ -345,13 +345,13 @@ class MultiState:
         self.state = n - 1
         self.next()
 
-    def stop(self):
+    def stop(self, wait=0):
         
-        self.trig.stop()
-        self.trig_f.stop()
+        self.trig.stop(wait)
+        self.trig_f.stop(wait)
         if self.prev:
-            self.prev_trig.stop()
-            self.prev_trig_f.stop()
+            self.prev_trig.stop(wait)
+            self.prev_trig_f.stop(wait)
         
         return self
     
@@ -391,10 +391,10 @@ class Pressure:
         self.trig = pyo.Change(source)
         self.trig_f = pyo.TrigFunc(input=self.trig, function=inner)
 
-    def stop(self):
+    def stop(self, wait=0):
         
         for o in [self.trig, self.trig_f]:
-            o.stop()
+            o.stop(wait)
             
         return self
     
@@ -468,10 +468,10 @@ class Expression:
         self.trig_start_f = pyo.TrigFunc(input=self.trig_start, function=self.metro.play)
         self.trig_stop_f = pyo.TrigFunc(input=self.trig_stop, function=self.metro.stop)
 
-    def stop(self):
+    def stop(self, wait=0):
         
         for o in [self.trig_start, self.trig_stop, self.trig_start_f, self.trig_stop_f, self.metro]:
-            o.stop()
+            o.stop(wait)
             
         return self
     
@@ -503,7 +503,8 @@ class Scroller(object):
     def play(self):
         self.__class__.setText(self.text)
     
-    def stop(self):
+    def stop(self, wait=0):
+        # wait param is ignored!
         self.__class__.setText('')
 
     
