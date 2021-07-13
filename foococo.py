@@ -41,7 +41,7 @@ DEFAULT_CURVE_SS2 = 2
 
 # When there are multiple callbacks, spread them in time
 # by this amount (in seconds)
-TIME_SPREAD = 0.001
+TIME_SPREAD = 0.01
 
 # =====================================================
 # Memoization
