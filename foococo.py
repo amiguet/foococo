@@ -515,26 +515,23 @@ class Scroller(object):
             cls.len = len(text)
             cls.text = text + '   ' + text[:4]
             cls.pos = 0
-            try:
-                cls.metro.play()
-            except AttributeError: # nothing to scroll yet
-                cls.metro = pyo.Metro(delay).play()
-                cls.tf = pyo.TrigFunc(cls.metro, cls._update)
         else:
             cls.text = ''
-            cls.pos = 0
-            cls.len = 0
-            cls._update()
-            try:
-                cls.metro.stop()
-            except AttributeError: # nothing to scroll yet
-                pass
+            hardware.display('')
+
+        try:
+            cls.metro.play()
+        except AttributeError: # nothing to scroll yet
+            cls.metro = pyo.Pattern(cls._update, delay).play()
     
     @classmethod
     def _update(cls):
-        
-        hardware.display(cls.text[cls.pos:cls.pos+4])
-        cls.pos = (cls.pos + 1) % (cls.len+3)
+
+        if cls.text:
+            hardware.display(cls.text[cls.pos:cls.pos+4])
+            cls.pos = (cls.pos + 1) % (cls.len+3)
+        else:
+            cls.metro.stop()
 
     @classmethod
     def pause(cls, delay=1):
