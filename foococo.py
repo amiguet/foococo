@@ -22,7 +22,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-import operator
 from functools import wraps
 from collections import deque
 import pyo
@@ -200,23 +199,22 @@ def extension_pedal():
     # 0, when fully "opened").
     # This is why we need some special code for that device.
 
-    stream = _midi_stream(
+    raw = _midi_stream(
         cc_num=86,
         minscale=1,
         maxscale=0,
     )
     
-    if extension_pedal.min is not None:
-        stream = pyo.Scale(stream, extension_pedal.min, extension_pedal.max, 0, 1)
+    stream = pyo.Scale(raw, extension_pedal.min, extension_pedal.max, 0, 1)
+    stream = pyo.Pow(stream, extension_pedal.pow)
+    stream.raw = raw
     
     return stream
 
-def calibrate_pedal(min=0, max=1):
-    extension_pedal.min = min
-    extension_pedal.max = max
-
-extension_pedal.min = None
-extension_pedal.max = None
+def calibrate_pedal(min=0, max=1, pow=1):
+    extension_pedal.min.setValue(min)
+    extension_pedal.max.setValue(max)
+    extension_pedal.pow.setValue(pow)
 
 
 # =====================================================
@@ -646,6 +644,11 @@ def init(server, text='', model=1, device_index=1):
     hardware.init(server, text, device_index)
     global task_executor
     task_executor = pyo.Pattern(execute_next_task, time=TIME_SPREAD)
+
+    extension_pedal.min = pyo.Sig(0)
+    extension_pedal.max = pyo.Sig(1)
+    extension_pedal.pow = pyo.Sig(1)
+
 
 def close(text='', back_to_standalone_mode=True):
     
