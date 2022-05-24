@@ -494,6 +494,8 @@ class Scroller(object):
     To get a playable/stoppable object that scrolls text,
     instantiate the class.
     '''
+
+    speed = .2
     
     def __init__(self, text):
         self.text = text
@@ -507,7 +509,7 @@ class Scroller(object):
 
     
     @classmethod
-    def setText(cls, text, delay=.2):
+    def setText(cls, text):
         
         if text:
             cls.len = len(text)
@@ -520,7 +522,7 @@ class Scroller(object):
         try:
             cls.metro.play()
         except AttributeError: # nothing to scroll yet
-            cls.metro = pyo.Pattern(cls._update, delay).play()
+            cls.metro = pyo.Pattern(cls._update, cls.speed).play()
     
     @classmethod
     def _update(cls):
@@ -539,9 +541,8 @@ class Scroller(object):
         except AttributeError: # No text scrolling yet, nothing to do
             return
             
-        if metro.isPlaying():
-            metro.stop()
-            cls.ca = pyo.CallAfter(cls.metro.play,1)
+        metro.time = delay
+        cls.ca = pyo.CallAfter(metro.setTime, delay, cls.speed)
 
         
 
