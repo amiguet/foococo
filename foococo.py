@@ -264,14 +264,20 @@ class Press:
     def stop(self, wait=0):
         
         self.trig.stop(wait)
-        self.trig_f.stop(wait)
+        try:
+            self.trig_f.stop(wait)
+        except AttributeError:
+            pass
         
         return self
     
     def play(self):
         
         self.trig.play()
-        self.trig_f.play()    
+        try:
+            self.trig_f.play()    
+        except AttributeError:
+            pass
         
         return self
             
