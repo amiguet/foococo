@@ -1,0 +1,37 @@
+version = 1
+revision = 3
+requires-python = ">=3.8"
+
+[[package]]
+name = "foococo"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "pyo" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pyo", specifier = ">=1.0.5" }]
+
+[[package]]
+name = "pyo"
+version = "1.0.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/77/c8/e949d16170a9f448994be74963fad54557c13d1c4e4302590fa35280ae55/pyo-1.0.5.tar.gz", hash = "sha256:e042d947a0b641b400e228f9e21eeca21df8bf4895c6dbd013f87638d7728e31", size = 5249926, upload-time = "2023-03-26T13:47:38.382Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/26/2e/ad102b370b3691e2f58f215a4e01801bd257359e92ec3d396108079a7974/pyo-1.0.5-cp310-cp310-macosx_12_0_x86_64.whl", hash = "sha256:7bdf11a32640ac3b8d32187ef9f76dd8fa3a811222563083c911ccc6b3b6faf1", size = 9722576, upload-time = "2023-03-26T13:46:30.119Z" },
+    { url = "https://files.pythonhosted.org/packages/a1/0a/c1f7bf6d4b2698ce57a3f7d01abf5c7b0ced9aed5b264068b6387ee91053/pyo-1.0.5-cp310-cp310-macosx_13_0_arm64.whl", hash = "sha256:f047d3bafdd2438099774254377d64923ffc090db5bd4bb49cb33416e9d6ee2f", size = 9702365, upload-time = "2023-03-26T13:46:33.881Z" },
+    { url = "https://files.pythonhosted.org/packages/e0/b8/8d0e38166af5291bf9198e7733adecaf767fe4f9a13c8ab639d0528d4d9e/pyo-1.0.5-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ae2e2df726e9cec1f554370d02b784bb8d7d47552fcfcd0dda194928d2ad16e9", size = 10866351, upload-time = "2023-03-26T13:46:37.801Z" },
+    { url = "https://files.pythonhosted.org/packages/43/00/2cb0f13b6e9e02234eef5a3defabb2bedef04b4babef90808db9441e2429/pyo-1.0.5-cp310-cp310-win_amd64.whl", hash = "sha256:430f1df284090dea0dea582507d5437de71305e1706f2402743628163882e672", size = 8551635, upload-time = "2023-03-26T13:46:41.364Z" },
+    { url = "https://files.pythonhosted.org/packages/06/bb/bd246a7901dc1991b97049376e6238cbb85b708515db6203617b46e16a00/pyo-1.0.5-cp311-cp311-macosx_12_0_x86_64.whl", hash = "sha256:0e93466fa5c417ccf17c80c4e476047d4d12582e84ccbfd19c289a018212a8dc", size = 9722423, upload-time = "2023-03-26T13:46:45.028Z" },
+    { url = "https://files.pythonhosted.org/packages/98/d5/980fb66cd0ae6f7f5f9a8c6fe3c447b13a610f20f9586c22d1f1d11407dc/pyo-1.0.5-cp311-cp311-macosx_13_0_arm64.whl", hash = "sha256:dc486007c1e16dea08509561052702fee43000be13c093a813cd94cb8f7483f8", size = 9702237, upload-time = "2023-03-26T13:46:48.65Z" },
+    { url = "https://files.pythonhosted.org/packages/18/71/59cd7ad1e51ec8b6388ccefdbb7e35a0f135723123e7558ee531de0670a4/pyo-1.0.5-cp311-cp311-win_amd64.whl", hash = "sha256:2034c1c5e22c7de4a400d1967c50d217bdd3bed68f1d2eb50b7a01d3d3454ab4", size = 8551643, upload-time = "2023-03-26T13:46:52.126Z" },
+    { url = "https://files.pythonhosted.org/packages/cd/35/bfef74c811e7f27029405bb069c90334964f76412589e24830b4c860d63a/pyo-1.0.5-cp38-cp38-macosx_12_0_x86_64.whl", hash = "sha256:8cb21f92ac51e2c76b0701004687dc67df3708f39c9c9d5eccbd77c2434dc8e6", size = 7879308, upload-time = "2023-03-26T13:47:06.392Z" },
+    { url = "https://files.pythonhosted.org/packages/63/01/7ee2ea4b092263faaa60293b8bb4f5e9206f923e3313c888cb3653c55e8b/pyo-1.0.5-cp38-cp38-macosx_13_0_arm64.whl", hash = "sha256:3c63223452fb2ea4b97400d749ef44c3c281cfb00fea9dcb480317435c3b9ea1", size = 9706219, upload-time = "2023-03-26T13:47:09.919Z" },
+    { url = "https://files.pythonhosted.org/packages/2d/ba/34e140d5fea5bb612b2d0a79eee55ce1a2282da1858568449f7bcf91bd76/pyo-1.0.5-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:19f6c55c9810527a99a98d31fb81a1e5ba451f5767c7cf858826402d4844f9c4", size = 10866362, upload-time = "2023-03-26T13:47:14.017Z" },
+    { url = "https://files.pythonhosted.org/packages/49/81/dd61d972560b0c5d5c8cbb300df19078235eef2ffaa46686acea728c0b26/pyo-1.0.5-cp38-cp38-win_amd64.whl", hash = "sha256:34a6ca33ee3e50a69078a2e5c8897921bc892446806cb1efd61ee9a3d3691c0b", size = 8544715, upload-time = "2023-03-26T13:47:18.234Z" },
+    { url = "https://files.pythonhosted.org/packages/5b/b1/915256809eede37ef9c73f4602ec72963880ff81bad93918afae06e45f31/pyo-1.0.5-cp39-cp39-macosx_12_0_x86_64.whl", hash = "sha256:664af552a800011f4f91162c33990171e388200c18ac43a530be24e0e2122ce5", size = 7879240, upload-time = "2023-03-26T13:47:21.403Z" },
+    { url = "https://files.pythonhosted.org/packages/bd/9f/17b90abb599a79958602a911adc7de3d0458b672be1774c7dfae952f6ff5/pyo-1.0.5-cp39-cp39-macosx_13_0_arm64.whl", hash = "sha256:9c0806d3b22045b9baf2de97a389db4f56d73edeafeea00a11fdb7fb6c0d7ecc", size = 9702305, upload-time = "2023-03-26T13:47:25.602Z" },
+    { url = "https://files.pythonhosted.org/packages/b0/9c/a629fb1a77829258dff1b8d047da4d82267ebd2cd7dcf480cd1ee0cca64a/pyo-1.0.5-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7555ef42a1e413f1a1c86b546cfb40b51b4019944712666b364871034ceab107", size = 10866358, upload-time = "2023-03-26T13:47:30.199Z" },
+    { url = "https://files.pythonhosted.org/packages/a9/c0/e7b5db9fa0fb62e6a986ff197eb29527573a837548081cb8cfd2918df3b2/pyo-1.0.5-cp39-cp39-win_amd64.whl", hash = "sha256:9f7437b48e8d5ada913050b0f99ae14cf8f2ac82f80e0fa228034a94acd64102", size = 8551000, upload-time = "2023-03-26T13:47:34.384Z" },
+]
